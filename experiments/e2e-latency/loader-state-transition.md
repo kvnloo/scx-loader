@@ -59,3 +59,31 @@ Capture:
 - scheduler correctness finding -> `sched-ext/scx#3750`.
 
 Do not combine the conclusions unless a trace demonstrates a shared cause.
+
+## Current integration finding
+
+The repository's packaged `scx_loader.service` starts plain `scx_loader`; it does **not** use the daemon's separate `--auto` CPU-utilization mode.
+
+On CachyOS, `power-profiles-daemon` is patched to call the `org.scx.Loader` D-Bus interface when the system power profile changes:
+
+- Power Saver -> `PowerSave`
+- Balanced -> `Auto`
+- Performance -> `Gaming`
+
+That makes the PPD integration the primary control-plane hypothesis for game-launch mode changes.
+
+Related upstream reports:
+
+- `sched-ext/scx#3750`: LAVD stalls plus a CachyOS scheduler-reactivation report
+- `CachyOS/CachyOS-PKGBUILDS#1536`: PPD/scx-loader state synchronization problems
+- `sched-ext/scx-loader#67`: proposal to move power-profile integration to the loader side
+
+## Transition watcher
+
+Run before launching a game or changing profiles:
+
+```sh
+bash experiments/e2e-latency/watch-transitions.sh
+```
+
+It logs state changes from `scxctl`, kernel sched_ext state/ops, `powerprofilesctl`, and follows both service journals. This should show exactly which profile transition precedes a scheduler mode change.
